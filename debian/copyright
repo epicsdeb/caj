@@ -1,0 +1,26 @@
+This package was debianized by Michael Davidsaver <mdavidsaver@bnl.gov> on
+Sat, 09 Jan 2010 09:33:02 -0500.
+
+It was downloaded from http://jca.cosylab.com/
+
+Upstream Authors:
+
+    Matej Sekoranja <matej.sekoranja@cosylab.com>
+    et al.
+
+Copyright:
+
+    Copyright (c) 2006 by Cosylab
+
+License:
+
+    Channel Access Java is free software; you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2 as published by the Free
+    Software Foundation.
+
+    On Debian GNU/Linux systems, the complete text of the GNU General
+    Public License is in `/usr/share/common-licenses/GPL', version 2 of this
+    license in `/usr/share/common-licenses/GPL-2'.
+
+The Debian packaging is (C) 2010, Michael Davidsaver <mdavidsaver@bnl.gov> and
+is licensed under the GPL, see `/usr/share/common-licenses/GPL'.

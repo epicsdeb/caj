@@ -1,0 +1,32 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+export DH_VERBOSE=1
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/ant.mk
+
+EPICS_HOST_ARCH:=$(shell /usr/epics/base/startup/EpicsHostArch)
+
+JAVA_HOME := /usr/lib/jvm/java-6-openjdk
+
+# Provides JNI tasks
+DEB_JARS += ant-nodeps
+
+DEB_INSTALL_DOCS_libcaj-java-doc += doc/*
+
+build/libcaj-java-doc::
+	$(DEB_ANT_INVOKE) doc
+
+clean::
+	rm -rf doc/api
+
+install/libcaj-java::
+	cp target/caj.jar caj.jar
+
+clean::
+	rm -f caj.jar
+
+binary-fixup/libcaj-java::
+	jh_installlibs -v -p$(cdbs_curpkg)
+	jh_depends -v -p$(cdbs_curpkg)
