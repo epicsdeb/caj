@@ -2,23 +2,22 @@ Source: caj
 Section: java
 Priority: extra
 Maintainer: Michael Davidsaver <mdavidsaver@bnl.gov>
-Build-Depends: cdbs, debhelper (>= 7), javahelper, ant, ant-optional,
-               libjca-java
-Build-Depends-Indep: openjdk-6-jdk
-Standards-Version: 3.8.0
+Build-Depends: debhelper (>= 7), javahelper (>= 0.32~)
+Build-Depends-Indep: openjdk-6-jdk, openjdk-6-doc, ant, ant-optional,
+                     libjca-java
+Standards-Version: 3.9.0
 Homepage: http://jca.cosylab.com/
 
 Package: libcaj-java
 Architecture: all
-Depends: ${shlibs:Depends}, java6-runtime-headless, ${java:Depends},
-         libjca-java
+Depends: ${java:Depends}
+Suggests: libcaj-java-doc (= ${source:Version})
 Description: EPICS Channel Access library for Java
  A native Java implementation of the EPICS client library.
 
 Package: libcaj-java-doc
 Section: doc
 Architecture: all
-Depends:
 Description: EPICS Channel Access library for Java
  A native Java implementation of the EPICS client library.
  .

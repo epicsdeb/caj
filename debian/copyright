@@ -19,8 +19,7 @@ License:
     Software Foundation.
 
     On Debian GNU/Linux systems, the complete text of the GNU General
-    Public License is in `/usr/share/common-licenses/GPL', version 2 of this
-    license in `/usr/share/common-licenses/GPL-2'.
+    Public License is in `/usr/share/common-licenses/GPL-2'.
 
 The Debian packaging is (C) 2010, Michael Davidsaver <mdavidsaver@bnl.gov> and
-is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
+is licensed under the GPL, see `/usr/share/common-licenses/GPL-2'.
