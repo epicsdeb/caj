@@ -1,3 +1,9 @@
+caj (1.1.7.20110524-1) unstable; urgency=low
+
+  * New snapshot version
+
+ -- Michael Davidsaver <mdavidsaver@bnl.gov>  Sun, 05 Jun 2011 12:49:31 -0400
+
 caj (1.1.5b-1) unstable; urgency=low
 
   * Initial release
