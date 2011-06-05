@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Implementation of reactor pattern using <code>java.nio.channels.Selector</code>.
@@ -32,6 +34,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Reactor {
 
+	// Get Logger
+	private static final Logger logger = Logger.getLogger(Reactor.class.getName());
+	
     /**
      * Simple internal request interface.
      */
@@ -53,6 +58,7 @@ public class Reactor {
 		
 		private SelectionKey key = null; 
 		private ClosedChannelException exception = null; 
+		private boolean done = false;
 		
 		/**
 		 * Contructor.
@@ -84,6 +90,7 @@ public class Reactor {
 			finally
 			{
 				// notify about completed registration process
+				done = true;
 				notifyAll();
 			}
 		}
@@ -94,6 +101,7 @@ public class Reactor {
 		public synchronized void cancelRegistration()
 		{
 			// notify about canceled registration process
+			done = true;
 			notifyAll();
 		}
 
@@ -111,6 +119,15 @@ public class Reactor {
 		 */
 		public SelectionKey getKey() {
 			return key;
+		}
+		
+		/**
+		 * Checks if registration is done (or canceled).
+		 * Note: note synced to this.
+		 * @return
+		 */
+		public boolean isDone() {
+			return done;
 		}
 
 	}
@@ -379,7 +396,7 @@ public class Reactor {
 		catch (Throwable th)
 		{
 			// TODO report exception
-			th.printStackTrace();
+			logger.log(Level.SEVERE, "", th);
 		}
 		
 		//System.err.println("[processInternal done] " + Thread.currentThread().getName());
@@ -436,7 +453,8 @@ public class Reactor {
 			{
 				// wait for completion
 				try	{
-					rr.wait();
+					while (!rr.isDone())
+						rr.wait();
 				} catch(InterruptedException ie) { /* noop */ }
 			}
 		}

@@ -14,27 +14,6 @@
 
 package com.cosylab.epics.caj;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import com.cosylab.epics.caj.impl.CAConstants;
-import com.cosylab.epics.caj.impl.CATransport;
-import com.cosylab.epics.caj.impl.ResponseRequest;
-import com.cosylab.epics.caj.impl.Transport;
-import com.cosylab.epics.caj.impl.TransportClient;
-import com.cosylab.epics.caj.impl.requests.ClearChannelRequest;
-import com.cosylab.epics.caj.impl.requests.CreateChannelRequest;
-import com.cosylab.epics.caj.impl.requests.EventAddRequest;
-import com.cosylab.epics.caj.impl.requests.ReadNotifyRequest;
-import com.cosylab.epics.caj.impl.requests.SearchRequest;
-import com.cosylab.epics.caj.impl.requests.WriteNotifyRequest;
-import com.cosylab.epics.caj.impl.requests.WriteRequest;
-
 import gov.aps.jca.CAException;
 import gov.aps.jca.CAStatus;
 import gov.aps.jca.Channel;
@@ -52,12 +31,38 @@ import gov.aps.jca.event.GetListener;
 import gov.aps.jca.event.MonitorListener;
 import gov.aps.jca.event.PutListener;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import com.cosylab.epics.caj.impl.CAConstants;
+import com.cosylab.epics.caj.impl.CATransport;
+import com.cosylab.epics.caj.impl.ResponseRequest;
+import com.cosylab.epics.caj.impl.Transport;
+import com.cosylab.epics.caj.impl.TransportClient;
+import com.cosylab.epics.caj.impl.requests.ClearChannelRequest;
+import com.cosylab.epics.caj.impl.requests.CreateChannelRequest;
+import com.cosylab.epics.caj.impl.requests.EventAddRequest;
+import com.cosylab.epics.caj.impl.requests.ReadNotifyRequest;
+import com.cosylab.epics.caj.impl.requests.SearchRequest;
+import com.cosylab.epics.caj.impl.requests.WriteNotifyRequest;
+import com.cosylab.epics.caj.impl.requests.WriteRequest;
+import com.cosylab.epics.caj.util.ArrayFIFO;
+
 /**
  * Implementation of CAJ JCA <code>Channel</code>.
  * @author <a href="mailto:matej.sekoranjaATcosylab.com">Matej Sekoranja</a>
  * @version $id$
  */
 public class CAJChannel extends Channel implements TransportClient {
+	
+	// Get Logger
+	private static final Logger logger = Logger.getLogger(CAJChannel.class.getName());
 	
 	/**
 	 * Client channel ID.
@@ -409,7 +414,7 @@ public class CAJChannel extends Channel implements TransportClient {
 				catch (IOException ioex)
 				{
 					// TODO remove?
-					ioex.printStackTrace();
+					logger.log(Level.SEVERE, "", ioex);
 				}
 			}
 			
@@ -517,6 +522,11 @@ public class CAJChannel extends Channel implements TransportClient {
 //System.err.println("CHANNEL transportResponsive");
 		if (connectionState == ConnectionState.DISCONNECTED)
 		{
+			/*
+			// responsive again, stop searching
+			context.getChannelSearchManager().unregisterChannel(this);
+			 */
+			 
 			updateSubscriptions();
 			
 			// reconnect using existing IDs, data
@@ -531,10 +541,14 @@ public class CAJChannel extends Channel implements TransportClient {
 //System.err.println("CHANNEL transportUnresponsive");
 		if (connectionState == ConnectionState.CONNECTED)
 		{
+			
 			// NOTE: 2 types of disconnected state - distinguish them
 			setConnectionState(ConnectionState.DISCONNECTED);
 
 			// ... CA notifies also w/ no access rights callback, although access right are not changed 
+			
+			
+			//transportClosed();
 		}
 	}
 
@@ -1139,7 +1153,7 @@ public class CAJChannel extends Channel implements TransportClient {
 			}
 			catch (Throwable th)
 			{
-				th.printStackTrace();
+				logger.log(Level.SEVERE, "", th);
 			}
 		}
 	}
@@ -1181,21 +1195,23 @@ public class CAJChannel extends Channel implements TransportClient {
 		else
 			status = CAStatus.DISCONN;
 			
+		ResponseRequest[] rrs;
 		synchronized (responseRequests)
 		{
-			ResponseRequest[] rrs = new ResponseRequest[responseRequests.size()];
+			rrs = new ResponseRequest[responseRequests.size()];
 			responseRequests.keySet().toArray(rrs);
-			for (int i = 0; i < rrs.length; i++)
+		}
+		
+		for (int i = 0; i < rrs.length; i++)
+		{
+			try
 			{
-				try
-				{
-					rrs[i].exception(status.getStatusCode(), null);
-				}
-				catch (Throwable th)
-				{
-					// TODO remove
-					th.printStackTrace();
-				}
+				rrs[i].exception(status.getStatusCode(), null);
+			}
+			catch (Throwable th)
+			{
+				// TODO remove
+				logger.log(Level.SEVERE, "", th);
 			}
 		}
 		
@@ -1226,7 +1242,7 @@ public class CAJChannel extends Channel implements TransportClient {
 				catch (Throwable th)
 				{
 					// TODO remove
-					th.printStackTrace();
+					logger.log(Level.SEVERE, "", th);
 				}
 			}
 		}
@@ -1254,7 +1270,7 @@ public class CAJChannel extends Channel implements TransportClient {
 				catch (Throwable th)
 				{
 					// TODO remove
-					th.printStackTrace();
+					logger.log(Level.SEVERE, "", th);
 				}
 			}
 		}
@@ -1278,7 +1294,7 @@ public class CAJChannel extends Channel implements TransportClient {
 
 	
 	protected Object ownerLock = new Object();
-	protected List owner = null;
+	protected ArrayFIFO owner = null;
 	protected int ownerIndex = -1;
 	
 	public void unsetListOwnership() {
@@ -1287,10 +1303,11 @@ public class CAJChannel extends Channel implements TransportClient {
 		}
 	}
 	
-	public void addAndSetListOwnership(List newOwner, int index) {
+	public void addAndSetListOwnership(ArrayFIFO newOwner, int index) {
 		synchronized (newOwner) {
 			synchronized (ownerLock) {
-				newOwner.add(this);
+				//System.out.println("changing list ownership of " + name + " to index:" + index);			
+				newOwner.push(this);
 				owner = newOwner;
 				ownerIndex = index;
 			}

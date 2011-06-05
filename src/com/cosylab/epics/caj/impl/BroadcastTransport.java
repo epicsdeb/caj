@@ -15,12 +15,15 @@
 package com.cosylab.epics.caj.impl;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.cosylab.epics.caj.impl.reactor.ReactorHandler;
 
@@ -34,6 +37,9 @@ import com.cosylab.epics.caj.impl.reactor.ReactorHandler;
 // TODO buffer out of memory bug (on massive connect)?! 
 public class BroadcastTransport implements Transport, ReactorHandler {
 
+	// Get Logger
+	private static final Logger logger = Logger.getLogger(BroadcastTransport.class.getName());
+	
 	/**
 	 * Context instance.
 	 */
@@ -95,15 +101,29 @@ public class BroadcastTransport implements Transport, ReactorHandler {
 		this.connectAddress = connectAddress;
 		this.remoteTransportRevision = remoteTransportRevision;
 		
-		// TODO consider broadcast address of subnet
-		this.broadcastAddresses = 
-		    	new InetSocketAddress[] { new InetSocketAddress("255.255.255.255", context.getBroadcastPort()) };
+		this.broadcastAddresses = getBroadcastAddresses(context.getBroadcastPort());
 
 		socketAddress = (InetSocketAddress)channel.socket().getRemoteSocketAddress();
 
 		// allocate receive buffer
 		receiveBuffer = ByteBuffer.allocate(CAConstants.MAX_UDP_RECV);
 		receiveBufferArray = new ByteBuffer[] { receiveBuffer };
+	}
+
+	public InetSocketAddress[] getBroadcastAddresses(int port) {
+		try
+		{
+			String NIF_CLASSNAME = System.getProperty("CAJ_NIF_CLASSNAME", "com.cosylab.epics.caj.util.nif.InetAddressUtilV6");
+			Class clazz = Class.forName(NIF_CLASSNAME);
+			Method method = clazz.getMethod("getBroadcastAddresses", new Class[] { int.class });
+			InetSocketAddress[] retVal = (InetSocketAddress[])method.invoke(null, new Object[] { Integer.valueOf(context.getBroadcastPort()) });
+			//context.getLogger().finer("Using broadcast address(es): " + Arrays.toString(retVal));
+			return retVal;
+		} catch (Throwable th) {
+			// fallback
+			context.getLogger().fine("Failed to introspect network interfaces for broadcast addresses, using '255.255.255.255'.");
+			return new InetSocketAddress[] { new InetSocketAddress("255.255.255.255", context.getBroadcastPort()) };
+		}
 	}
 	
 	/**
@@ -189,7 +209,7 @@ public class BroadcastTransport implements Transport, ReactorHandler {
 			
 		} catch (IOException ioex) {
 			// TODO what to do here
-			//ioex.printStackTrace();
+			logger.log(Level.SEVERE, "", ioex);
 		}
 	}
 
@@ -220,7 +240,7 @@ public class BroadcastTransport implements Transport, ReactorHandler {
 			catch (IOException ioex) 
 			{
 				// TODO what to do here
-				ioex.printStackTrace(); 
+				logger.log(Level.SEVERE, "", ioex);
 			}
 		}
 	}
