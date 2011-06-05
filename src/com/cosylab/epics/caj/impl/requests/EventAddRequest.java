@@ -243,17 +243,18 @@ public class EventAddRequest extends AbstractCARequest implements NotifyResponse
 	 */
 	public void exception(int errorCode, String errorMessage) {
 		CAStatus status = CAStatus.forStatusCode(errorCode);
-	
-		// noop if monitor is cleared
-		if (monitor.isCleared())
-		    return;
 		
 		// destroy only on channel destroy
 		// NOTE: this does not really destroy subscription on the server - can be done via CAJMonitor.clear()	
-		if (status == CAStatus.CHANDESTROY)
+		if (status == CAStatus.CHANDESTROY) {
 			cancel();
-		else
+			return;
+		} else {
+			// noop if monitor is cleared
+			if (monitor.isCleared())
+			    return;
 			subscriptionUpdateNeeded = true;
+		}
 					
 		// do not dispatch if "only" disconnected
 		if (status != CAStatus.DISCONN)

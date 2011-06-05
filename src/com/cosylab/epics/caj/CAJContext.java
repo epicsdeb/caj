@@ -85,7 +85,7 @@ public class CAJContext extends Context implements CAContext, CAJConstants, Conf
     /**
      * Maintenance version.
      */
-    private static final int CAJ_VERSION_MAINTENANCE = 5;
+    private static final int CAJ_VERSION_MAINTENANCE = 7;
 
     /**
      * Development version.
@@ -242,7 +242,7 @@ public class CAJContext extends Context implements CAContext, CAJConstants, Conf
 	/**
 	 * Context instance.
 	 */
-	private static final int LOCK_TIMEOUT = 10 * 6000;	// 10s
+	private static final int LOCK_TIMEOUT = 20 * 1000;	// 20s
 
 	/**
 	 * Map of channels (keys are CIDs).
@@ -366,38 +366,60 @@ public class CAJContext extends Context implements CAContext, CAJConstants, Conf
 	{
 		JCALibrary jcaLibrary = JCALibrary.getInstance();
 
-		/*
-		// load env var configuration (move to JCA)
-		addressList = getEnvironmentVariable("EPICS_CA_ADDR_LIST", addressList);
-		autoAddressList = getEnvironmentVariable("EPICS_CA_AUTO_ADDR_LIST",  autoAddressList?"YES":"NO").equalsIgnoreCase("YES");
-		connectionTimeout = Float.parseFloat(getEnvironmentVariable("EPICS_CA_CONN_TMO", String.valueOf(connectionTimeout)));
-		beaconPeriod = Float.parseFloat(getEnvironmentVariable("EPICS_CA_BEACON_PERIOD", String.valueOf(beaconPeriod)));
-		repeaterPort = Integer.parseInt(getEnvironmentVariable("EPICS_CA_REPEATER_PORT", String.valueOf(repeaterPort)));
-		serverPort = Integer.parseInt(getEnvironmentVariable("EPICS_CA_SERVER_PORT", String.valueOf(serverPort)));
-		maxArrayBytes = Integer.parseInt(getEnvironmentVariable("EPICS_CA_MAX_ARRAY_BYTES", String.valueOf(maxArrayBytes)));
-        */
-		
-		// load default Context configuration
-		final String contextClassName = Context.class.getName();
-		addressList = jcaLibrary.getProperty(contextClassName + ".addr_list", addressList);
-		autoAddressList = jcaLibrary.getPropertyAsBoolean(contextClassName + ".auto_addr_list",  autoAddressList);
-		connectionTimeout = jcaLibrary.getPropertyAsFloat(contextClassName + ".connection_timeout", connectionTimeout);
-		beaconPeriod = jcaLibrary.getPropertyAsFloat(contextClassName + ".beacon_period", beaconPeriod);
-		repeaterPort = jcaLibrary.getPropertyAsInt(contextClassName + ".repeater_port", repeaterPort);
-		serverPort = jcaLibrary.getPropertyAsInt(contextClassName + ".server_port", serverPort);
-		maxArrayBytes = jcaLibrary.getPropertyAsInt(contextClassName + ".max_array_bytes", maxArrayBytes);
-		String eventDispatcherClassName = jcaLibrary.getProperty(contextClassName + ".event_dispatcher");
-
-		// load CAJ specific configuration (overrides default)
+		String eventDispatcherClassName = null;
 		final String thisClassName = this.getClass().getName();
-		addressList = jcaLibrary.getProperty(thisClassName + ".addr_list", addressList);
-		autoAddressList = jcaLibrary.getPropertyAsBoolean(thisClassName + ".auto_addr_list",  autoAddressList);
-		connectionTimeout = jcaLibrary.getPropertyAsFloat(thisClassName + ".connection_timeout", connectionTimeout);
-		beaconPeriod = jcaLibrary.getPropertyAsFloat(thisClassName + ".beacon_period", beaconPeriod);
-		repeaterPort = jcaLibrary.getPropertyAsInt(thisClassName + ".repeater_port", repeaterPort);
-		serverPort = jcaLibrary.getPropertyAsInt(thisClassName + ".server_port", serverPort);
-		maxArrayBytes = jcaLibrary.getPropertyAsInt(thisClassName + ".max_array_bytes", maxArrayBytes);
+	    if (Boolean.getBoolean("jca.use_env"))
+	    {
+	    	// Context default configuration
+	    	eventDispatcherClassName = jcaLibrary.getProperty( gov.aps.jca.Context.class.getName()+".event_dispatcher", eventDispatcherClassName );
 
+	        String tmp = System.getenv("EPICS_CA_ADDR_LIST");
+	        if (tmp != null) addressList = tmp;
+	        
+	    	tmp = System.getenv("EPICS_CA_AUTO_ADDR_LIST");
+	    	if (tmp != null)
+	    		autoAddressList = !tmp.equalsIgnoreCase("NO"); 
+	    	else
+	    		autoAddressList = true;
+	    	
+	    	tmp = System.getenv("EPICS_CA_CONN_TMO");
+	    	if (tmp != null) connectionTimeout = Float.parseFloat(tmp);
+	    	
+	    	tmp = System.getenv("EPICS_CA_BEACON_PERIOD");
+	       	if (tmp != null) beaconPeriod = Float.parseFloat(tmp);
+	           	
+	    	tmp = System.getenv("EPICS_CA_REPEATER_PORT");
+	    	if (tmp != null) repeaterPort = Integer.parseInt(tmp);
+	    	
+	    	tmp = System.getenv("EPICS_CA_SERVER_PORT");
+	    	if (tmp != null) serverPort = Integer.parseInt(tmp);
+
+	    	tmp = System.getenv("EPICS_CA_MAX_ARRAY_BYTES");
+	    	if (tmp != null) maxArrayBytes = Integer.parseInt(tmp);
+	    }
+	    else
+	    {
+			// load default Context configuration
+			final String contextClassName = Context.class.getName();
+			addressList = jcaLibrary.getProperty(contextClassName + ".addr_list", addressList);
+			autoAddressList = jcaLibrary.getPropertyAsBoolean(contextClassName + ".auto_addr_list",  autoAddressList);
+			connectionTimeout = jcaLibrary.getPropertyAsFloat(contextClassName + ".connection_timeout", connectionTimeout);
+			beaconPeriod = jcaLibrary.getPropertyAsFloat(contextClassName + ".beacon_period", beaconPeriod);
+			repeaterPort = jcaLibrary.getPropertyAsInt(contextClassName + ".repeater_port", repeaterPort);
+			serverPort = jcaLibrary.getPropertyAsInt(contextClassName + ".server_port", serverPort);
+			maxArrayBytes = jcaLibrary.getPropertyAsInt(contextClassName + ".max_array_bytes", maxArrayBytes);
+			eventDispatcherClassName = jcaLibrary.getProperty(contextClassName + ".event_dispatcher");
+	
+			// load CAJ specific configuration (overrides default)
+			addressList = jcaLibrary.getProperty(thisClassName + ".addr_list", addressList);
+			autoAddressList = jcaLibrary.getPropertyAsBoolean(thisClassName + ".auto_addr_list",  autoAddressList);
+			connectionTimeout = jcaLibrary.getPropertyAsFloat(thisClassName + ".connection_timeout", connectionTimeout);
+			beaconPeriod = jcaLibrary.getPropertyAsFloat(thisClassName + ".beacon_period", beaconPeriod);
+			repeaterPort = jcaLibrary.getPropertyAsInt(thisClassName + ".repeater_port", repeaterPort);
+			serverPort = jcaLibrary.getPropertyAsInt(thisClassName + ".server_port", serverPort);
+			maxArrayBytes = jcaLibrary.getPropertyAsInt(thisClassName + ".max_array_bytes", maxArrayBytes);
+	    }
+			
 		eventDispatcherClassName = jcaLibrary.getProperty(thisClassName + ".event_dispatcher", eventDispatcherClassName);
 		if (eventDispatcherClassName != null)
 		{
@@ -595,7 +617,7 @@ public class CAJContext extends Context implements CAContext, CAJConstants, Conf
 			catch (Throwable th)
 			{
 				// TODO remove
-				th.printStackTrace();
+				logger.log(Level.SEVERE, "", th);
 			}
 		}
 	}
@@ -740,6 +762,7 @@ public class CAJContext extends Context implements CAContext, CAJConstants, Conf
 				
 				try
 				{
+					// spurious wakeup wont hurt here... 
 					if (!registrationConfirmed)
 					    registrationConfirmedCondition.wait(100);
 				} catch (InterruptedException ie) {}
@@ -792,6 +815,12 @@ public class CAJContext extends Context implements CAContext, CAJConstants, Conf
 		// cleanup
 		//
 		
+		// stop waiting
+		synchronized (zeroPendingRequestsCondition)
+		{
+			zeroPendingRequestsCondition.notifyAll();
+		}
+
 		// this will also close all CA transports
 		destroyAllChannels();
 		
@@ -842,7 +871,7 @@ public class CAJContext extends Context implements CAContext, CAJConstants, Conf
 			}
 			catch (Throwable th)
 			{
-				th.printStackTrace();
+				logger.log(Level.SEVERE, "", th);
 			}
 		}
 	}
@@ -1021,27 +1050,32 @@ public class CAJContext extends Context implements CAContext, CAJConstants, Conf
 		throws TimeoutException, CAException, IllegalStateException {
 		checkState();
 
-		long time = System.currentTimeMillis();
+		final long time = System.currentTimeMillis();
 		flushIO();
-		time = System.currentTimeMillis() - time;
 		
-		long timeToWaitInMS = (long)(timeout*1000) - time;
-		if (timeout == 0.0 || timeToWaitInMS > 0)
+		long timeToWaitInMS = 0;
+		if (timeout >= 0.0)
 		{
-			synchronized (zeroPendingRequestsCondition)
+			try
 			{
-				// race condition check...
-				if (pendingRequestsCount.get() > 0)
+				synchronized (zeroPendingRequestsCondition)
 				{
-					try {
-						if (timeout == 0.0)
-							// wait until completed
+					// wait until completed
+					if (timeout == 0.0)
+					{
+						while (pendingRequestsCount.get() > 0 && state != DESTROYED)
 							zeroPendingRequestsCondition.wait();
-						else
+					}
+					else
+					{
+						final long endTime = time + (long)(timeout*1000);
+						while (pendingRequestsCount.get() > 0 && (timeToWaitInMS = (endTime - System.currentTimeMillis())) > 0 && state != DESTROYED)
+						{
 							zeroPendingRequestsCondition.wait(timeToWaitInMS);
-					} catch (InterruptedException e) { /* noop */ }
+						}
+					}
 				}
-			}
+			} catch (InterruptedException e) { /* noop */ }
 		}
 		
 		int stillPending;
@@ -1052,9 +1086,15 @@ public class CAJContext extends Context implements CAContext, CAJConstants, Conf
 			stillPending = pendingRequestsCount.getAndSet(0);
 		}
 		
-		// throw timeout execption if not all requests where processed
-		if (stillPending > 0 && timeToWaitInMS > 0)
-			throw new TimeoutException("pendIO timed out");
+		// throw timeout exception if not all requests where processed
+		if (stillPending > 0)
+		{
+			if (state == DESTROYED)
+				throw new CAException("context destroyed during pendIO");
+				
+			if (timeToWaitInMS <= 0)
+				throw new TimeoutException("pendIO timed out");
+		}
 	}
 
 	/**

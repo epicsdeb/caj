@@ -27,6 +27,8 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.cosylab.epics.caj.CAJContext;
 import com.cosylab.epics.caj.impl.reactor.ReactorHandler;
@@ -43,6 +45,9 @@ import com.cosylab.epics.caj.util.Timer;
  */
 public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnable {
 
+	// Get Logger
+	private static final Logger logger = Logger.getLogger(CATransport.class.getName());
+	
 	/**
 	 * Connection status.
 	 */
@@ -184,17 +189,20 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 	 * Close connection.
 	 * @param forced	flag indicating if forced (e.g. forced disconnect) is required 
 	 */
-	public synchronized void close(boolean forced) {
+	public void close(boolean forced) {
 
-		// already closed check
-		if (closed)
-			return;
-		closed = true;
-
-		Timer.cancel(taskID);
-		
-		// remove from registry
-		context.getTransportRegistry().remove(socketAddress, priority);
+		synchronized (this)
+		{
+			// already closed check
+			if (closed)
+				return;
+			closed = true;
+	
+			Timer.cancel(taskID);
+			
+			// remove from registry
+			context.getTransportRegistry().remove(socketAddress, priority);
+		}
 
 		// flush first
 		if (!forced)
@@ -241,7 +249,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 			catch (Throwable th)
 			{
 				// TODO remove
-				th.printStackTrace();
+				logger.log(Level.SEVERE, "", th);
 			}
 		}
 	}
@@ -268,7 +276,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 					catch (Throwable th)
 					{
 						// TODO remove
-						th.printStackTrace();
+						logger.log(Level.SEVERE, "", th);
 					}
 				}
 			}
@@ -363,8 +371,14 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 					return; 
 				}
 				else if (bytesRead == 0)
+				{
+					// no more data, disable flow control
+					bufferFullCount = 0;
+					if (flowControlActive)
+						disableFlowControl();
 					break;
-
+				}
+				
 				// flow control check
 				if (socketBuffer.hasRemaining())
 				{
@@ -394,7 +408,6 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 			}
 			
 		} catch (IOException ioex) {
-			//ioex.printStackTrace();
 			// close connection
 			close(true);
 		}
@@ -466,7 +479,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 				catch (Throwable th)
 				{
 					// catch all bad code responses...	
-					th.printStackTrace();
+					logger.log(Level.SEVERE, "", th);
 				}
 
 				// reset header buffer
@@ -496,7 +509,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 				catch (Throwable th)
 				{
 					// catch all bad code responses...	
-					th.printStackTrace();
+					logger.log(Level.SEVERE, "", th);
 				}
 
 				// reset header buffer
@@ -538,7 +551,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 			//System.out.println("disableFlowControl");
 		} catch (IOException e) {
 			// TODO remove
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "", e);
 		}
 	}
 	
@@ -553,7 +566,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 			//System.out.println("enableFlowControl");
 		} catch (IOException e) {
 			// TODO remove
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "", e);
 		}
 	}
 
@@ -750,7 +763,6 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 		}
 		catch (IOException ioex)
 		{
-			//ioex.printStackTrace();
 			// close connection
 			close(true);
 			return false;
@@ -973,7 +985,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 					catch (Throwable th)
 					{
 						// TODO remove
-						th.printStackTrace();
+						logger.log(Level.SEVERE, "", th);
 					}
 				}
 			}
@@ -1001,7 +1013,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 				catch (Throwable th)
 				{
 					// TODO remove
-					th.printStackTrace();
+					logger.log(Level.SEVERE, "", th);
 				}
 			}
 		    
@@ -1018,7 +1030,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 					catch (Throwable th)
 					{
 						// TODO remove
-						th.printStackTrace();
+						logger.log(Level.SEVERE, "", th);
 					}
 				}
 			}
@@ -1044,7 +1056,7 @@ public class CATransport implements Transport, ReactorHandler, Timer.TimerRunnab
 				catch (Throwable th)
 				{
 					// TODO remove
-					th.printStackTrace();
+					logger.log(Level.SEVERE, "", th);
 				}
 			}
 		}

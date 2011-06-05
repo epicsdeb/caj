@@ -17,11 +17,11 @@ package com.cosylab.epics.caj.impl;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Stack;
 
 import com.cosylab.epics.caj.CAJChannel;
 import com.cosylab.epics.caj.CAJContext;
 import com.cosylab.epics.caj.impl.requests.VersionRequest;
+import com.cosylab.epics.caj.util.ArrayFIFO;
 import com.cosylab.epics.caj.util.Timer;
 
 /**
@@ -29,17 +29,6 @@ import com.cosylab.epics.caj.util.Timer;
  * @version $id$
  */
 public class ChannelSearchManager {
-
-	/**
-	 * Stack implementation w/ additional pop method, that returns null if stack is empty.
-	 */
-	private class NullablePopStack extends Stack {
-		private static final long serialVersionUID = 2912630766676229660L;
-
-		public synchronized Object nullablePop() {
-			return size() == 0 ? null : pop();
-		}
-	}
 	
 	/**
 	 * Max search tries per frame.
@@ -54,7 +43,7 @@ public class ChannelSearchManager {
 		volatile int searchAttempts = 0; 
 
 		/**
-		 * Number of search respones in one frame.
+		 * Number of search responses in one frame.
 		 */
 		volatile int searchRespones = 0; 
 		
@@ -81,27 +70,27 @@ public class ChannelSearchManager {
 	    /**
 	     * This timer index.
 	     */
-	    int timerIndex;
+	    final int timerIndex;
 	    
 	    /**
 	     * Flag indicating whether boost is allowed. 
 	     */
-	    boolean allowBoost;
+	    final boolean allowBoost;
 	    
 	    /**
-	     * Flag indicating whether slowdown is allowed (for last timer). 
+	     * Flag indicating whether slow-down is allowed (for last timer). 
 	     */
-	    boolean allowSlowdown;
+	    final boolean allowSlowdown;
 
 	    /**
 		 * Ordered (as inserted) list of channels with search request pending.
 		 */
-	    NullablePopStack requestPendingChannels = new NullablePopStack();
+	    ArrayFIFO requestPendingChannels = new ArrayFIFO();
 
 		/**
 		 * Ordered (as inserted) list of channels with search request pending.
 		 */
-	    NullablePopStack responsePendingChannels = new NullablePopStack();
+	    ArrayFIFO responsePendingChannels = new ArrayFIFO();
 
 		/**
 		 * Timer ID.
@@ -195,7 +184,7 @@ public class ChannelSearchManager {
 		{
 			// do not sync this, not necessary and might cause deadlock
 			CAJChannel channel;
-			while ((channel = (CAJChannel)responsePendingChannels.nullablePop()) != null) {
+			while ((channel = (CAJChannel)responsePendingChannels.pop()) != null) {
 				if (searchAttempts > 0)
 					searchAttempts--;
 				destination.installChannel(channel);
@@ -251,7 +240,7 @@ public class ChannelSearchManager {
 				timeAtResponseCheck = now;
 				
 				// notify about timeout (move it to other timer) 
-				while ((channel = (CAJChannel)responsePendingChannels.nullablePop()) != null) {
+				while ((channel = (CAJChannel)responsePendingChannels.pop()) != null) {
 					if (allowSlowdown) {
 						channel.unsetListOwnership();
 						searchResponseTimeout(channel, timerIndex);
@@ -295,16 +284,26 @@ public class ChannelSearchManager {
 			int framesSent = 0;
 			int triesInFrame = 0;
 			
-			while ((channel = (CAJChannel)requestPendingChannels.nullablePop()) != null) {
+			while ((channel = (CAJChannel)requestPendingChannels.pop()) != null) {
 				channel.unsetListOwnership();
 				
 				boolean requestSent = true;
 				boolean allowNewFrame = (framesSent+1) < framesPerTry;
-				boolean frameWasSent = generateSearchRequestMessage(channel, allowNewFrame);
+				boolean frameWasSent;
+				try
+				{
+					frameWasSent = generateSearchRequestMessage(channel, allowNewFrame);
+				} catch (Throwable th) {
+					// make sure that channel is owned
+					// and add it to response list not to cause dead-loops
+					channel.addAndSetListOwnership(responsePendingChannels, timerIndex);
+					// do not report any error
+					break;
+				}
 				if (frameWasSent) {
 					framesSent++;
 					triesInFrame = 0;
-					if (!allowNewFrame) {
+					if (!allowNewFrame) { 
 						channel.addAndSetListOwnership(requestPendingChannels, timerIndex);
 						requestSent = false;
 					}
@@ -321,14 +320,19 @@ public class ChannelSearchManager {
 				}
 				
 				// limit
-				if (!allowNewFrame)
+				if (triesInFrame == 0 && !allowNewFrame)
 					break;
 			}
 
 		    // flush out the search request buffer
 			if (triesInFrame > 0) {
-				flushSendBuffer();
-				framesSent++;
+				try
+				{
+					flushSendBuffer();
+					framesSent++;
+				} catch (Throwable th) {
+					// noop
+				}
 			}
 			
 			endSequenceNumber = getSequenceNumber();
@@ -346,7 +350,7 @@ public class ChannelSearchManager {
 		}
 		
 		/**
-		 * Search reponse received notification.
+		 * Search response received notification.
 		 * @param responseSequenceNumber sequence number of search frame which contained search request.
 		 * @param isSequenceNumberValid valid flag of <code>responseSequenceNumber</code>.
 		 * @param responseTime time of search response.
@@ -363,7 +367,7 @@ public class ChannelSearchManager {
 			// update RTTE
 			if (validResponse)
 			{
-				long dt = responseTime - getTimeAtLastSend();
+				final long dt = responseTime - getTimeAtLastSend();
 				updateRTTE(dt);
 				
 				if (searchRespones < Integer.MAX_VALUE)
@@ -386,8 +390,8 @@ public class ChannelSearchManager {
 		
 		
 		/**
-		 * Calcaulate search time perdiod.
-		 * @return search time perdiod.
+		 * Calculate search time period.
+		 * @return search time period.
 		 */
 		public final long period()
 		{
@@ -430,7 +434,7 @@ public class ChannelSearchManager {
 
 	/**
 	 * Search timers.
-	 * Each timer with a greather index has longer (doubled) search period.
+	 * Each timer with a greater index has longer (doubled) search period.
 	 */
 	private SearchTimer[] timers;
 	
@@ -617,7 +621,7 @@ public class ChannelSearchManager {
 	}
 	
 	/**
-	 * Search reponse received notification.
+	 * Search response received notification.
 	 * @param channel found channel.
 	 * @param responseSequenceNumber sequence number of search frame which contained search request.
 	 * @param isSequenceNumberValid valid flag of <code>responseSequenceNumber</code>.
@@ -665,12 +669,12 @@ public class ChannelSearchManager {
 	}
 	
 	/**
-	 * Update (recaluclate) rount-trip estimate.
-	 * @param rtt new sample of rount-trip value.
+	 * Update (recalculate) round-trip estimate.
+	 * @param rtt new sample of round-trip value.
 	 */
 	private final void updateRTTE(long rtt)
 	{
-		double error = rtt - rttmean;
+		final double error = rtt - rttmean;
 		rttmean += error / 4.0;
 //System.out.println("rtt:" + rtt + ", rttmean:" + rttmean);
 	}
