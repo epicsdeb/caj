@@ -1,3 +1,17 @@
+caj (1.1.7.20110524-3) unstable; urgency=low
+
+  * Build for defaul jdk
+  * Removed unneeded EPICS_HOST_ARCH from rules
+
+ -- Leon Flaks <flaks@bnl.gov>  Tue, 15 Mar 2016 12:40:12 -0400
+
+caj (1.1.7.20110524-2) wheezy; urgency=low
+
+  * fix jdk dir name for wheezy - this version has never been pushed to github
+
+ -- Michael Davidsaver <mdavidsaver@bnl.gov>  Fri, 17 May 2013 14:40:52 -0400
+
+
 caj (1.1.7.20110524-1) unstable; urgency=low
 
   * New snapshot version
