@@ -1,3 +1,9 @@
+caj (1.1.15.20150629-1) unstable; urgency=medium
+
+  * New upstream version
+
+ -- Michael Davidsaver <mdavidsaver@gmail.com>  Tue, 21 Jun 2016 10:04:31 -0400
+
 caj (1.1.7.20110524-3) unstable; urgency=low
 
   * Build for defaul jdk

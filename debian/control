@@ -1,7 +1,7 @@
 Source: caj
 Section: java
 Priority: extra
-Maintainer: Michael Davidsaver <mdavidsaver@bnl.gov>
+Maintainer: Michael Davidsaver <mdavidsaver@gmail.com>
 Build-Depends: debhelper (>= 7), javahelper (>= 0.32~)
 Build-Depends-Indep: default-jdk, default-jdk-doc, ant, ant-optional,
                      libjca-java
