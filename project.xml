@@ -125,7 +125,7 @@
 	 ! DO NOT MODIFY THIS PROPERTY MANUALLY! Instead, use Maven goals
 	 ! cosybuild:release and cosybuild:maintain.
 	 !-->
-	<currentVersion>1.1.8beta</currentVersion>
+	<currentVersion>1.1.15</currentVersion>
 	
 	<!-- A single-line description of the project. -->
 	<shortDescription>100% pure Java implementation of the EPICS Channel Access library.</shortDescription>
@@ -138,10 +138,45 @@
 	 ! date when the support ceased.
 	 !-->
 	<versions>
+                <version>
+                        <id>1.1.15</id>
+                        <name>1.1.15</name>
+                        <tag>CAJ_20150325_1_1_15</tag>
+                </version>
+                <version>
+                        <id>1.1.14</id>
+                        <name>1.1.14</name>
+                        <tag>CAJ_20140327_1_1_14</tag>
+                </version>
+                <version>
+                        <id>1.1.13</id>
+                        <name>1.1.13</name>
+                        <tag>CAJ_20130805_1_1_13</tag>
+                </version>
+                <version>
+                        <id>1.1.12</id>
+                        <name>1.1.12</name>
+                        <tag>CAJ_20120530_1_1_12</tag>
+                </version>
+                <version>
+                        <id>1.1.11</id>
+                        <name>1.1.11</name>
+                        <tag>CAJ_20120221_1_1_11</tag>
+                </version>
+                <version>
+                        <id>1.1.10</id>
+                        <name>1.1.10</name>
+                        <tag>CAJ_20120416_1_1_10</tag>
+                </version>
+		<version>
+			<id>1.1.9</id>
+			<name>1.1.9</name>
+			<tag></tag>
+		</version>
 		<version>
 			<id>1.1.8beta</id>
 			<name>1.1.8beta</name>
-			<tag>not-yet-CAJ_20110524_1_1_8</tag>
+			<tag></tag>
 		</version>
 		<version>
 			<id>1.1.7</id>
@@ -259,14 +294,9 @@
 	
 	<dependencies>
 		<dependency>
-			<groupId>concurrent</groupId>
-			<artifactId>backport-util-concurrent</artifactId>
-			<version>2.2</version>
-		</dependency>
-		<dependency>
 			<groupId>epics</groupId>
 			<artifactId>jca</artifactId>
-			<version>2.3.2</version>
+			<version>2.3.6</version>
 		</dependency>
 	</dependencies>
 	

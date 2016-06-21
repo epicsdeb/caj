@@ -60,7 +60,13 @@ public class LeaderFollowersHandler implements ReactorHandler, Runnable {
      */
     public void handleEvent(SelectionKey key)
     {
-        
+    	// if not valid, just promote new leader
+    	if (!key.isValid())
+    	{
+	        threadPool.promoteLeader(this);
+	        return;
+    	}
+    	
         reactor.disableSelectionKey(key);
         try
         {
@@ -82,8 +88,7 @@ public class LeaderFollowersHandler implements ReactorHandler, Runnable {
      */
     public void run()
     {
-        if (!reactor.process())
-            threadPool.shutdown();
+    	reactor.process();
     }
     
 }

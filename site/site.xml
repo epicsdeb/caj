@@ -9,10 +9,16 @@
         <menu name="Quick Links">
             <item name="About" href="index.html"/>
             <item name="Changes" href="changes-report.html"/>
-            <item name="Download" href="http://epics.sourceforge.net/maven2/epics/caj/"/>
+            <item name="Download" href="http://search.maven.org/#browse|-1437972145"/>
             <item name="Sourceforge" href="http://sourceforge.net/projects/epics-jca/"/>
         </menu>
 
         <menu ref="reports"/>
     </body>
+    <poweredBy>
+        <logo name="Cloudbees" href="https://openepics.ci.cloudbees.com/"
+          img="http://web-static-cloudfront.s3.amazonaws.com/images/badges/BuiltOnDEV.png"/>
+        <logo name="Maven" href="http://maven.apache.org/"
+          img="http://maven.apache.org/images/logos/maven-feather.png"/>
+    </poweredBy>    
 </project>

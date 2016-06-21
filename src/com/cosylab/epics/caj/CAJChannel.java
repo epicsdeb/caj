@@ -37,6 +37,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,7 +53,6 @@ import com.cosylab.epics.caj.impl.requests.ReadNotifyRequest;
 import com.cosylab.epics.caj.impl.requests.SearchRequest;
 import com.cosylab.epics.caj.impl.requests.WriteNotifyRequest;
 import com.cosylab.epics.caj.impl.requests.WriteRequest;
-import com.cosylab.epics.caj.util.ArrayFIFO;
 
 /**
  * Implementation of CAJ JCA <code>Channel</code>.
@@ -217,13 +217,14 @@ public class CAJChannel extends Channel implements TransportClient {
 	 * @param sid
 	 * @param typeCode
 	 * @param elementCount
+	 * @return <code>true</code> if real create channel request needs to be sent to the server.
 	 */
-	public synchronized void createChannel(CATransport transport, int sid, short typeCode, int elementCount) 
+	public synchronized boolean createChannel(CATransport transport, int sid, short typeCode, int elementCount) 
 	{
 
 		// do not allow duplicate creation to the same transport
 		if (!allowCreation)
-			return;
+			return false;
 		allowCreation = false;
 		
 		// TODO is this really necesarry... 1. priority is to take channel from the existing one,
@@ -239,7 +240,7 @@ public class CAJChannel extends Channel implements TransportClient {
 		{
 			// request to sent create request to same transport, ignore
 			// this happens when server is slower (processing search requests) than client generating it
-			return;
+			return false;
 		}
 		
 		this.transport = transport;
@@ -254,6 +255,14 @@ public class CAJChannel extends Channel implements TransportClient {
 			this.elementCount = elementCount;
 		}
 
+		// do not submit CreateChannelRequest here, connection loss while submitting and lock
+		// on this channel instance may cause deadlock
+		return true;
+	}
+	
+	// this is completely not sycned
+	public void issueCreateChannelRequest()
+	{
 		try
 		{
 			// submit (immediately)
@@ -264,7 +273,6 @@ public class CAJChannel extends Channel implements TransportClient {
 			createChannelFailed();
 		}
 	}
-	
 
 	/**
 	 * Cancelation status.
@@ -409,6 +417,8 @@ public class CAJChannel extends Channel implements TransportClient {
 			{
 				try
 				{
+					// NOTE: this does not submit message immediately, waits for flush to be triggered somehow.. hmmm.
+					// possible deadlock if sent immediately (since lock on this channel instance is held)
 					new ClearChannelRequest(transport, channelID, serverChannelID).submit();
 				}
 				catch (IOException ioex)
@@ -510,9 +520,10 @@ public class CAJChannel extends Channel implements TransportClient {
 	/**
 	 * @see com.cosylab.epics.caj.impl.TransportClient#transportChanged()
 	 */
-	public void transportChanged() {
+	public synchronized void transportChanged() {
 //System.err.println("CHANNEL transportChanged");
-		initiateSearch();
+		if (connectionState == ConnectionState.DISCONNECTED)
+			initiateSearch();
 	}
 
 	/**
@@ -888,6 +899,10 @@ public class CAJChannel extends Channel implements TransportClient {
 		throws CAException, IllegalStateException {
 		connectionRequiredCheck();
 
+		// sync get requires predefined count; variable length array not possible
+		if (count <= 0)
+			throw new IllegalArgumentException("count <= 0");
+		
 		if (!getReadAccess())
 			throw new CAException("No read access rights granted."); 
 
@@ -909,6 +924,31 @@ public class CAJChannel extends Channel implements TransportClient {
 			throw new IllegalStateException("No channel transport available, channel disconnected.");
 	}
 
+	public DBR get(DBR preallocatedDBR, DBRType type, int count)
+	throws CAException, IllegalStateException {
+	connectionRequiredCheck();
+
+	if (!getReadAccess())
+		throw new CAException("No read access rights granted."); 
+
+	Transport t = getTransport();
+	if (t != null)
+	{
+		try
+		{
+			DBR retVal = preallocatedDBR; //DBRFactory.create(type, count);
+			new ReadNotifyRequest(this, null, retVal, t, getServerChannelID(), type.getValue(), count).submit();
+			return retVal;
+		}
+		catch (IOException ioex)
+		{
+			throw new CAException("Failed to retrieve value.", ioex);
+		} 
+	}
+	else
+		throw new IllegalStateException("No channel transport available, channel disconnected.");
+}
+
 	/**
 	 * @see gov.aps.jca.Channel#get(gov.aps.jca.dbr.DBRType, int, gov.aps.jca.event.GetListener)
 	 */
@@ -924,7 +964,10 @@ public class CAJChannel extends Channel implements TransportClient {
 		{
 			try
 			{
-				new ReadNotifyRequest(this, l, null, t, getServerChannelID(), type.getValue(), count).submit();
+                if (count == 0 && t.getMinorRevision() < 13)
+                    count = getElementCount();
+
+                new ReadNotifyRequest(this, l, null, t, getServerChannelID(), type.getValue(), count).submit();
 			}
 			catch (IOException ioex)
 			{
@@ -1011,7 +1054,14 @@ public class CAJChannel extends Channel implements TransportClient {
 		int mask,
 		MonitorListener l)
 		throws CAException, IllegalStateException {
+		if (count == 0)
+        {
+			Transport t = getTransport();
+			if (t != null && t.getMinorRevision() < 13)
+	    		count = getElementCount();
+        }
 		checkNotClosedState();
+		checkMonitorSize(type, count, context.getMaxArrayBytes());
 		return new CAJMonitor(context, type, count, this, l, mask);
 	}
 
@@ -1293,46 +1343,18 @@ public class CAJChannel extends Channel implements TransportClient {
 	}
 
 	
-	protected Object ownerLock = new Object();
-	protected ArrayFIFO owner = null;
-	protected int ownerIndex = -1;
+	protected final AtomicReference timerIdRef = new AtomicReference();
 	
-	public void unsetListOwnership() {
-		synchronized (ownerLock) {
-			owner = null;
-		}
+	public void setTimerId(Object timerId)
+	{
+		timerIdRef.set(timerId);
 	}
 	
-	public void addAndSetListOwnership(ArrayFIFO newOwner, int index) {
-		synchronized (newOwner) {
-			synchronized (ownerLock) {
-				//System.out.println("changing list ownership of " + name + " to index:" + index);			
-				newOwner.push(this);
-				owner = newOwner;
-				ownerIndex = index;
-			}
-		}
-	}
-
-	public void removeAndUnsetListOwnership() {
-		if (owner == null)
-			return;
-		
-		synchronized (owner) {
-			synchronized (ownerLock) {
-				if (owner != null) {
-					owner.remove(this);
-					owner = null;
-				}
-			}
-		}
+	public Object getTimerId()
+	{
+		return timerIdRef.get();
 	}
 	
-	public final int getOwnerIndex() {
-		synchronized (ownerLock) {
-			return ownerIndex;
-		}
-	}
 
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()

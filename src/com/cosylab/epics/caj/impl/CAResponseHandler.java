@@ -18,8 +18,23 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import com.cosylab.epics.caj.CAJContext;
-import com.cosylab.epics.caj.impl.handlers.*;
-import com.cosylab.epics.caj.util.HexDump;
+import com.cosylab.epics.caj.impl.handlers.AccessRightsResponse;
+import com.cosylab.epics.caj.impl.handlers.BadResponse;
+import com.cosylab.epics.caj.impl.handlers.BeaconResponse;
+import com.cosylab.epics.caj.impl.handlers.ChannelDisconnectedResponse;
+import com.cosylab.epics.caj.impl.handlers.ClearChannelResponse;
+import com.cosylab.epics.caj.impl.handlers.CreateChannelFailedResponse;
+import com.cosylab.epics.caj.impl.handlers.CreateChannelResponse;
+import com.cosylab.epics.caj.impl.handlers.EchoResponse;
+import com.cosylab.epics.caj.impl.handlers.EventAddResponse;
+import com.cosylab.epics.caj.impl.handlers.EventCancelResponse;
+import com.cosylab.epics.caj.impl.handlers.ExceptionResponse;
+import com.cosylab.epics.caj.impl.handlers.NoopResponse;
+import com.cosylab.epics.caj.impl.handlers.ReadNotifyResponse;
+import com.cosylab.epics.caj.impl.handlers.RepeaterConfirmResponse;
+import com.cosylab.epics.caj.impl.handlers.SearchResponse;
+import com.cosylab.epics.caj.impl.handlers.VersionResponse;
+import com.cosylab.epics.caj.impl.handlers.WriteNotifyResponse;
 
 /**
  * CA response handler - main handler which dispatches responses to appripriate handlers.
@@ -100,7 +115,8 @@ public class CAResponseHandler implements ResponseHandler {
 		{
 			context.getLogger().fine("Invalid response header (" + CAConstants.CA_MESSAGE_HEADER_SIZE + " bytes expected, " + headerBufferSize + " received) from " + responseFrom + ".");
 			// TODO remove debug output
-			HexDump.hexDump("Invalid CA Header", headerBuffer.array(), headerBuffer.position(), headerBufferSize);
+			// XXX switching to direct buffers, headerBuffer.array() may not be available
+			// HexDump.hexDump("Invalid CA Header", headerBuffer.array(), headerBuffer.position(), headerBufferSize);
 			// flush all header buffer (needed for UDP packed responses)
 			headerBuffer.position(headerBuffer.limit());
 			return;
@@ -112,7 +128,8 @@ public class CAResponseHandler implements ResponseHandler {
 		{
 			context.getLogger().fine("Invalid (or unsupported) command: " + commandID + ".");
 			// TODO remove debug output
-			HexDump.hexDump("Invalid CA Header", headerBuffer.array(), headerBuffer.position(), headerBufferSize);
+			// XXX switching to direct buffers, headerBuffer.array() may not be available
+			// HexDump.hexDump("Invalid CA Header", headerBuffer.array(), headerBuffer.position(), headerBufferSize);
 			// flush all header buffer (needed for UDP packed responses)
 			headerBuffer.position(headerBuffer.limit());
 			return;

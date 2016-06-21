@@ -42,22 +42,22 @@ public class EventAddRequest extends AbstractCARequest implements NotifyResponse
 	/**
 	 * Context.
 	 */
-	protected CAJContext context;
+	protected final CAJContext context;
 
 	/**
 	 * Subscription ID given by the context when registered.
 	 */
-	protected int subsid;
+	protected final int subsid;
 
 	/**
 	 * Response callback listener.
 	 */
-	protected CAJMonitor monitor;
+	protected final CAJMonitor monitor;
 
 	/**
 	 * Channel.
 	 */
-	protected CAJChannel channel;
+	protected final CAJChannel channel;
 
 	/**
 	 * Request send priority.
@@ -106,17 +106,15 @@ public class EventAddRequest extends AbstractCARequest implements NotifyResponse
 		{
 		    requestMessage = ByteBuffer.allocate(CAConstants.CA_MESSAGE_HEADER_SIZE +  16);
 			requestMessage = insertCAHeader(transport, requestMessage,
-					(short)1, (short)16, (short)dataType, (short)dataCount,
+					(short)1, 16, (short)dataType, dataCount,
 					sid, subsid);
 		}
 		else 
 		{
 			requestMessage = ByteBuffer.allocate(CAConstants.CA_EXTENDED_MESSAGE_HEADER_SIZE + 16);
-		    requestMessage = insertCAHeader(transport, requestMessage,
-		            						(short)1, (short)0xFFFF, (short)dataType, (short)0,
-		            						sid, subsid);
-		    requestMessage.putInt(16);
-		    requestMessage.putInt(dataCount);
+			requestMessage = insertCAHeader(transport, requestMessage,
+					(short)1, 16, (short)dataType, dataCount,
+					sid, subsid);
 		}
 
 		// low, high, to - all 0.0
@@ -140,7 +138,7 @@ public class EventAddRequest extends AbstractCARequest implements NotifyResponse
 			subscriptionUpdateNeeded = false;
 			new SubscriptionUpdateRequest(transport,
 					   requestMessage.getInt(8), requestMessage.getInt(12),
-					   requestMessage.getShort(4), requestMessage.getShort(6)).submit();
+					   requestedDataType, requestedDataCount).submit();
 		}
 	}
 

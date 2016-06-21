@@ -237,10 +237,10 @@ public class BroadcastTransport implements Transport, ReactorHandler {
 
 				channel.send(buffer, broadcastAddresses[i]);
 			}
-			catch (IOException ioex) 
+			catch (Throwable ioex) 
 			{
 				// TODO what to do here
-				logger.log(Level.SEVERE, "", ioex);
+				logger.log(Level.WARNING, "Failed to sent a datagram to:" + broadcastAddresses[i], ioex);
 			}
 		}
 	}
@@ -355,5 +355,12 @@ public class BroadcastTransport implements Transport, ReactorHandler {
 	 */
 	public void setIgnoredAddresses(InetSocketAddress[] addresses) {
 		ignoredAddresses = addresses;
+	}
+
+	/**
+	 * @return the channel
+	 */
+	public DatagramChannel getChannel() {
+		return channel;
 	}
 }
