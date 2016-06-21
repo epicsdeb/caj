@@ -5,6 +5,113 @@
   </properties>
   
   <body>
+
+    <release version="1.1.16" date="2015-xx-xx" description="">
+      <action dev="msekoranja" type="fix">
+       Duplicate monitor resubscription bugfix.
+      </action>
+    </release>
+
+    <release version="1.1.15" date="2015-03-25" description="Reimplemented CA search.">
+      <action dev="msekoranja" type="update">
+       Reimplemented CA search algorithm.
+      </action>
+      <action dev="msekoranja" type="update">
+       Zero length get request handling when server is older than 3.14.12.
+      </action>
+      <action dev="msekoranja" type="update">
+       Added loopback address to CA address list when no addresses found.
+      </action>
+      <action dev="msekoranja" type="update">
+       Added CAJContext.modifyUserName() method.
+      </action>
+    </release>
+   
+    <release version="1.1.14" date="2014-03-27" description="Stability fixes">
+      <action dev="msekoranja" type="update">
+        More robust handling of UDP broadcast detection and sending (latest Win + JDK bugs).
+      </action>
+      <action dev="msekoranja" type="update">
+        More robust handling when server stops reading from TCP socket (send buffer get full).
+      </action>
+      <action dev="msekoranja" type="update">
+        Tunable SearchChannelManager. Thanks to Murali Shankar.
+      </action>
+      <action dev="msekoranja" type="fix">
+        Subscription clear ack. message properly ignored.
+      </action>
+      <action dev="msekoranja" type="fix">
+        CAJ possible deadlock resolved when IOC is shutdown while CAJ is creating channels on it.
+      </action>
+      <action dev="msekoranja" type="fix">
+        CAJ search live-lock.
+      </action>
+      <action dev="msekoranja" type="update">
+        CAJ_DEBUG support for direct allocated byte buffers.
+      </action>
+      <!--action dev="msekoranja" type="update">
+        No need to flush Monitor.clear() anymore - same behavior as native implementation.
+      </action-->
+    </release>
+
+    <release version="1.1.13" date="2013-08-05" description="CAJ channel sharing disable support">
+      <action dev="msekoranja" type="update">
+        CAJ channel sharing disable support.
+      </action>
+    </release>
+
+    <release version="1.1.12" date="2013-05-30" description="JDK7 support">
+      <action dev="msekoranja" type="update">
+        JDK7 support.
+      </action>
+    </release>
+
+    <release version="1.1.11" date="2013-02-21" description="String decoding fix">
+      <action dev="msekoranja" type="fix">
+        Decoding of strings of length 40 fixed (in some special cases).
+      </action>
+    </release>
+
+    <release version="1.1.10" date="2012-06-14" description="DBE_PROPERTY support">
+      <action dev="msekoranja" type="update">
+        DBE_PROPERTY support.
+      </action>
+     <action dev="msekoranja" type="update">
+        More efficient decoding of big arrays. Work done by Gabriele Carcassi.
+      </action>
+     <action dev="carcassi" type="update">
+        Variable sized array support (elementCount=0).
+      </action>
+     <action dev="msekoranja" type="update">
+        Monitor payload check at creation time.
+      </action>
+     <action dev="msekoranja" type="update">
+        Optimized receive buffer size handling (starts with small initial receive buffer, resizes up to MAX_ARRAY_BYTES on demand.)
+      </action>
+
+    </release>
+
+    <release version="1.1.9" date="2011-10-26" description="Extended header fixed.">
+      <action dev="msekoranja" type="fix">
+      	Extended header fixed (requesting more that 64k elements).
+      </action>              
+    </release>
+
+    <release version="1.1.8" date="2011-09-14" description="Stability improved.">
+      <action dev="msekoranja" type="fix">
+      	Extended header handling.
+      </action>              
+      <action dev="msekoranja" type="fix">
+      	Robustness of Reactor improved (in case of CancelledKeyException).
+      </action>              
+      <action dev="msekoranja" type="fix">
+      	Disabling flow control.
+      </action>              
+      <action dev="msekoranja" type="fix">
+    	More robust behavior in case JVM fails to get hostname.
+      </action>              
+    </release>
+
     <release version="1.1.7" date="2010-10-01" description="Stability improved.">
       <action dev="msekoranja" type="update">
     	Annoying stdout println removed of UDP transport (makes users happier, but there is less diagnostic).           

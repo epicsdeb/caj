@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 
 import com.cosylab.epics.caj.CAJChannel;
 import com.cosylab.epics.caj.CAJContext;
-import com.cosylab.epics.caj.impl.CAConstants;
 import com.cosylab.epics.caj.impl.DBRDecoder;
 import com.cosylab.epics.caj.impl.NotifyResponseRequest;
 import com.cosylab.epics.caj.impl.Transport;
@@ -111,27 +110,21 @@ public class ReadNotifyRequest extends AbstractCARequest implements NotifyRespon
 		this.dbr = dbr; 
 		this.sid = sid;
 		this.requestedDataType = dataType;
+		
+		if (dataCount == 0 && channel.getTransport().getMinorRevision() < 13)
+			dataCount = channel.getElementCount();
+
 		this.requestedDataCount = dataCount;
+		
 		sync = (dbr != null); 
 		// TODO not clean
 		context = (CAJContext)transport.getContext(); // or channel.getContext()
 		ioid = context.registerResponseRequest(this);
 		channel.registerResponseRequest(this);
 		
-		if (dataCount < 0xFFFF)
-		{
-		    requestMessage = insertCAHeader(transport, null,
-		            						(short)15, (short)0, (short)dataType, (short)dataCount,
-		            						sid, ioid);
-		}
-		else {
-			requestMessage = ByteBuffer.allocate(CAConstants.CA_EXTENDED_MESSAGE_HEADER_SIZE);
-		    requestMessage = insertCAHeader(transport, requestMessage,
-		            						(short)15, (short)0xFFFF, (short)dataType, (short)0,
-		            						sid, ioid);
-		    requestMessage.putInt(0);
-		    requestMessage.putInt(dataCount);
-		}
+	    requestMessage = insertCAHeader(transport, null,
+	            						(short)15, 0, (short)dataType, dataCount,
+	            						sid, ioid);
 	}
 
 	/**

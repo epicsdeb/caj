@@ -18,6 +18,7 @@ import gov.aps.jca.CAStatus;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 import com.cosylab.epics.caj.CAJConstants;
 import com.cosylab.epics.caj.CAJContext;
@@ -127,15 +128,18 @@ public class ExceptionResponse extends AbstractCAJResponseHandler
 			else
 				originalHeaderSize = CAConstants.CA_MESSAGE_HEADER_SIZE;
 			
-			originalHeaderBuffer = ByteBuffer.wrap(payloadBuffer.array(), payloadStart, originalHeaderSize);
+			originalHeaderBuffer = payloadBuffer.slice();
+                        originalHeaderBuffer.limit(originalHeaderSize);
 
 			// find zero-termination (from end is efficient, but not error-proof)
-			int errorMessageEnd = payloadStart + originalHeaderSize;
-			byte[] bufferArray = payloadBuffer.array();
-			while (bufferArray[errorMessageEnd] != 0)
+			int errorMessageStart = payloadStart + originalHeaderSize;
+			int errorMessageEnd = errorMessageStart;
+			while (payloadBuffer.get(errorMessageEnd) != 0)
 				errorMessageEnd++;
-			errorMessage = new String(bufferArray, payloadStart + originalHeaderSize,
-												   errorMessageEnd - payloadStart - originalHeaderSize);
+                        payloadBuffer.position(errorMessageStart);
+                        ByteBuffer errorMessageBuffer = payloadBuffer.slice();
+                        errorMessageBuffer.limit(errorMessageEnd - errorMessageStart);
+                        errorMessage = Charset.defaultCharset().decode(errorMessageBuffer).toString();
 		}
 		
 		// read rest of the payload (needed for UDP)
@@ -157,7 +161,7 @@ public class ExceptionResponse extends AbstractCAJResponseHandler
 		// TODO remove
 		if (debug)
 			context.getLogger().fine("Exception occured, code: " + CAStatus.forStatusCode(parameter2) + ", message: '" + errorMessage + "'.");
-		
+System.err.println("Exception occured, code: " + CAStatus.forStatusCode(parameter2) + ", message: '" + errorMessage + "'.");	
 		//delegate
 		/* exception code, channel id, error message, original header) */
 		handlerTable[commandID].handleException(parameter2, parameter1, errorMessage, originalHeaderBuffer);
@@ -169,6 +173,7 @@ public class ExceptionResponse extends AbstractCAJResponseHandler
 	 */
 	public void handleException(int errorCode, int cid,
 								String errorMessage, ByteBuffer originalHeaderBuffer) {
+		
 		// TODO log or not to log?
 		context.getLogger().fine("Exception occured, code: " + CAStatus.forStatusCode(errorCode) + ", message: '" + errorMessage + "'.");
 	}

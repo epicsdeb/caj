@@ -27,9 +27,14 @@ public interface CAConstants {
 	public static final short CA_MAJOR_PROTOCOL_REVISION = 4;
 	
 	/**
-	 * CA protocol minor revision (implemented by this library).
+	 * CAC (client) protocol minor revision (implemented by this library).
 	 */
-	public static final short CA_MINOR_PROTOCOL_REVISION = 11;
+	public static final short CA_MINOR_PROTOCOL_REVISION = 13;
+
+	/**
+	 * CAS (server) protocol minor revision (implemented by this library).
+	 */
+	public static final short CAS_MINOR_PROTOCOL_REVISION = 11;
 
 	/**
 	 * Unknown CA protocol minor revision.
@@ -76,7 +81,7 @@ public interface CAConstants {
 	/**
 	 * TCP maximum receive message size.
 	 */
-	public static final int MAX_TCP_RECV = 1024 * 16;
+	public static final int MAX_TCP_RECV = 1024 * 16 + CA_EXTENDED_MESSAGE_HEADER_SIZE;
 
 	/**
 	 * Default priority (corresponds to POSIX SCHED_OTHER)
